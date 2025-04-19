@@ -18,11 +18,9 @@ const videoRef = useRef(null);
 const canvasRef = useRef(null);
 const [analysis, setAnalysis] = useState(null);
 const [isStreaming, setIsStreaming] = useState(false);
+const [isPaused, setIsPaused] = useState(false); // New state for pause functionality
 const [error, setError] = useState(null);
 const [connectionStatus, setConnectionStatus] = useState('Checking connection...');
-
-// Component state variables
-
 
 // Define connections between keypoints
 const connections = [
@@ -44,6 +42,7 @@ const startWebcam = async () => {
     if (videoRef.current) {
       videoRef.current.srcObject = stream;
       setIsStreaming(true);
+      setIsPaused(false); // Ensure we're not paused when starting
       setError(null);
     }
   } catch (err) {
@@ -60,6 +59,25 @@ const stopWebcam = () => {
     tracks.forEach(track => track.stop());
     videoRef.current.srcObject = null;
     setIsStreaming(false);
+    setIsPaused(false); // Reset pause state when stopping
+  }
+};
+
+// Toggle pause state
+const togglePause = () => {
+  if (isStreaming) {
+    if (isPaused) {
+      // Resume playback
+      if (videoRef.current) {
+        videoRef.current.play();
+      }
+    } else {
+      // Pause playback
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+    }
+    setIsPaused(!isPaused);
   }
 };
 
@@ -89,7 +107,7 @@ useEffect(() => {
 
 // Process and analyze video frames
 useEffect(() => {
-  if (!isStreaming) return;
+  if (!isStreaming || isPaused) return; // Don't process frames when paused
   
   const video = videoRef.current;
   const canvas = canvasRef.current;
@@ -168,7 +186,7 @@ useEffect(() => {
       cancelAnimationFrame(animationId);
     }
   };
-}, [isStreaming]);
+}, [isStreaming, isPaused]); // Add isPaused as a dependency
 
 // Draw detected pose on canvas with improved error handling
 const drawPose = (ctx, keypoints) => {
@@ -420,6 +438,18 @@ const renderEmptyMetrics = () => {
   );
 };
 
+// Render empty feedback placeholder
+const renderEmptyFeedback = () => {
+  return (
+    <div className="feedback-container">
+      <h3>Form Feedback:</h3>
+      <ul className="feedback-list">
+        <li className="feedback-item empty-feedback">Start camera to receive feedback</li>
+      </ul>
+    </div>
+  );
+};
+
 // Render pose skeleton only (for side view)
 const renderSkeletonOnly = () => {
   if (!analysis || !analysis.keypoints) return null;
@@ -487,18 +517,6 @@ const renderEmptySkeletonBox = () => {
   );
 };
 
-// Render empty feedback placeholder
-const renderEmptyFeedback = () => {
-  return (
-    <div className="feedback-container">
-      <h3>Form Feedback:</h3>
-      <ul className="feedback-list">
-        <li className="feedback-item empty-feedback">Start camera to receive feedback</li>
-      </ul>
-    </div>
-  );
-};
-
 // Empty score visualization before camera starts
 const renderEmptyScore = () => {
   return (
@@ -552,18 +570,23 @@ return (
               <button onClick={stopWebcam} className="control-button stop-button">
                 Stop Camera
               </button>
-
+              
+              {/* New Capture/Resume button */}
+              <button onClick={togglePause} className="control-button capture-button">
+                {isPaused ? 'Resume' : 'Capture'}
+              </button>
             </>
           )}
         </div>
         
         {error && <div className="error-message">{error}</div>}
         
-        {/* Show starting message when camera is not active */}
-        {!isStreaming && !error && (
-          <div className="start-message">
-            <h3>Start Camera to Begin Analysis</h3>
-            <p>Position yourself so your full body is visible</p>
+        {/* Empty space - removed starting message */}
+        
+        {/* Show paused indicator when camera is paused */}
+        {isPaused && (
+          <div className="pause-indicator">
+            <span>PAUSED</span>
           </div>
         )}
       </div>

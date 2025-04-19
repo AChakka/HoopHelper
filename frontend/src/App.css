@@ -16,6 +16,12 @@
   to { opacity: 1; }
 }
 
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  50% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -159,7 +165,35 @@ main {
   background-color: #d32f2f;
 }
 
-/* Removed audio button styles */
+/* New capture button styles */
+.capture-button {
+  background-color: var(--warning-color);
+  color: black;
+}
+
+.capture-button:hover {
+  background-color: #e0a800;
+}
+
+/* Pause indicator styles */
+.pause-indicator {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 10;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+.pause-indicator span {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
+  font-weight: bold;
+  font-size: 1.2rem;
+}
 
 .error-message {
   position: absolute;
@@ -174,7 +208,7 @@ main {
   max-width: 80%;
 }
 
-/* Remove start message styles entirely */
+/* Removed start-message styles */
 
 .analysis-container {
   flex: 1;
@@ -219,8 +253,6 @@ main {
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
 }
-
-/* Removed instructions styles */
 
 .results-container {
   display: flex;
