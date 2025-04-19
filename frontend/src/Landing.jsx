@@ -7,8 +7,12 @@ const Landing = () => {
   return (
     <div>
           <div className="app">
+          <video className="video-bg" autoPlay loop muted playsInline>
+                <source src="/LeBron-Edit.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+            </video>
 
-            <div className='hoop'>L</div>
+            <div className='hoop'></div>
 
           <div className="basketball-shot">🏀</div>
 
