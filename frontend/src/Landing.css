@@ -14,7 +14,7 @@ body{
 .app {
     margin: 0;
     height: 100vh;
-    border: 20px solid orange;
+    border: 20px solid #ffa500;
     box-sizing: border-box;
     position: relative;
     font-family: 'Arial', sans-serif;

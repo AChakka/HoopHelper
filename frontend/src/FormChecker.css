@@ -1,11 +1,11 @@
 /* App.css */
 :root {
-  --primary-color: #007bff;
-  --secondary-color: #6c757d;
-  --success-color: #4CAF50;
-  --warning-color: #FFC107;
-  --danger-color: #F44336;
-  --light-color: #f8f9fa;
+  --primary-color: rgb(255, 165, 0);
+  --secondary-color: #ffa500;
+  --success-color: #ffa500;
+  --warning-color: #ffa500;
+  --danger-color: #ffa500;
+  --light-color: #ffa500;
   --dark-color: #343a40;
   --border-radius: 8px;
   --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -31,8 +31,9 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
-  color: var(--dark-color);
-  background-color: #f4f7f9;
+  color: var(--primary-color);
+  background-color: #131111 !important;
+  overflow: scroll !important;
 }
 
 .app-container {
@@ -50,7 +51,7 @@ header {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #8a187d;
 }
 
 h1 {
@@ -111,7 +112,7 @@ main {
   position: relative;
   background-color: #000;
   border-radius: var(--border-radius);
-  overflow: hidden;
+  overflow: scroll;
   box-shadow: var(--box-shadow);
   width: 100%;
   max-width: 640px;
@@ -155,7 +156,7 @@ main {
 }
 
 .start-button {
-  background-color: var(--primary-color);
+  background-color: #ffa500 !important;
   color: white;
 }
 
@@ -230,7 +231,7 @@ main {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  background-color: white;
+  background-color: rgb(31, 31, 31) !important;
   padding: 20px;
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
@@ -285,7 +286,7 @@ main {
   height: 24px;
   background-color: #e0e0e0;
   border-radius: var(--border-radius);
-  overflow: hidden;
+  overflow: scroll;
   margin-bottom: 8px;
 }
 
@@ -316,20 +317,20 @@ main {
 .feedback-item {
   background-color: #f8f9fa;
   padding: 10px;
-  border-radius: var(--border-radius);
+  border-radius: orange !important;
   margin-bottom: 8px;
-  border-left: 4px solid var(--primary-color);
+  border-left: 4px solid orange !important;
 }
 
 /* Empty placeholder styling */
 .empty-feedback {
-  color: var(--secondary-color);
+  color: #000000 !important;
   font-style: italic;
 }
 
 .metrics-container h3 {
   margin-bottom: 10px;
-  color: var(--primary-color);
+  color: #ffa500 !important;
 }
 
 .metrics-grid {
@@ -366,17 +367,17 @@ footer {
   margin-top: 30px;
   text-align: center;
   padding: 15px 0;
-  color: var(--secondary-color);
+  color: black !important;
   font-size: 0.9rem;
-  border-top: 1px solid #ddd;
+  border-top: 1px solid rgba(0, 0, 0, 0) !important;
   height: 10px;
 }
 
 /* History toggle button */
 .history-toggle-button {
   padding: 8px 16px;
-  background-color: var(--primary-color);
-  color: white;
+  background-color: #ffa500 !important;
+  color: black !important;
   border: none;
   border-radius: var(--border-radius);
   font-weight: 500;
@@ -414,7 +415,7 @@ footer {
   align-items: center;
   padding: 10px;
   border-radius: var(--border-radius);
-  background-color: #f8f9fa;
+  background-color: white;
   border-left: 3px solid var(--primary-color);
 }
 
@@ -428,4 +429,12 @@ footer {
 
 .history-details-simple {
   flex: 1;
+}
+
+h1, h2, h3, h4, h5{
+  color:#ffa500 !important;
+}
+
+.empty-history-message{
+  color: #ffa500 !important;
 }

@@ -364,13 +364,13 @@ const drawPose = (ctx, keypoints) => {
     
     // Define keypoint colors if not already defined in the outer scope
     const colors = {
-      nose: '#FF0000',
-      shoulder: '#00FF00',
-      elbow: '#0000FF',
-      wrist: '#FFA500',
-      hip: '#800080',
-      knee: '#FFFF00',
-      ankle: '#00FFFF'
+      nose: '#ffa500',
+      shoulder: '#ffa500',
+      elbow: '#ffa500',
+      wrist: '#ffa500',
+      hip: '#ffa500',
+      knee: '#ffa500',
+      ankle: '#ffa500'
     };
     
     // Draw all detected points first to ensure complete visualization
