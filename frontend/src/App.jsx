@@ -1,3 +1,8 @@
+// App.jsx
+import { useState, useEffect, useRef } from 'react';
+import './App.css';
+
+// Define keypointColors globally to ensure it's available
 const keypointColors = {
   nose: '#FF0000',
   shoulder: '#00FF00',
@@ -6,9 +11,7 @@ const keypointColors = {
   hip: '#800080',
   knee: '#FFFF00',
   ankle: '#00FFFF'
-};// App.jsx
-import { useState, useEffect, useRef } from 'react';
-import './App.css';
+};
 
 function App() {
 const videoRef = useRef(null);
@@ -18,37 +21,8 @@ const [isStreaming, setIsStreaming] = useState(false);
 const [error, setError] = useState(null);
 const [connectionStatus, setConnectionStatus] = useState('Checking connection...');
 
-// Audio feedback for form quality
-const [audioEnabled, setAudioEnabled] = useState(true);
-const goodFormAudioRef = useRef(null);
-const badFormAudioRef = useRef(null);
-const lastAudioPlayedTime = useRef(0);
-const audioDebounceTime = 2000; // Minimum time between sounds (2 seconds)
+// Component state variables
 
-// Handle playing appropriate audio based on form score
-useEffect(() => {
-  if (!audioEnabled || !analysis || !analysis.analysis || !analysis.analysis.valid_pose) return;
-  
-  const score = analysis.analysis.score || 0;
-  const currentTime = Date.now();
-  
-  // Only play sound if we haven't played one recently
-  if (currentTime - lastAudioPlayedTime.current > audioDebounceTime) {
-    if (score >= 70) {
-      // Play good form sound
-      if (goodFormAudioRef.current) {
-        goodFormAudioRef.current.play().catch(e => console.error("Audio play error:", e));
-        lastAudioPlayedTime.current = currentTime;
-      }
-    } else if (score <= 40) {
-      // Play bad form sound
-      if (badFormAudioRef.current) {
-        badFormAudioRef.current.play().catch(e => console.error("Audio play error:", e));
-        lastAudioPlayedTime.current = currentTime;
-      }
-    }
-  }
-}, [analysis, audioEnabled]);
 
 // Define connections between keypoints
 const connections = [
@@ -147,19 +121,35 @@ useEffect(() => {
           },
           body: JSON.stringify({ image: imageData }),
         })
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Server responded with status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(result => {
           if (result.error) {
             console.error('Analysis error:', result.error);
           } else {
-            // Only update if we have valid keypoints
-            if (result.keypoints && result.keypoints.filter(p => p !== null).length > 10) {
-              setAnalysis(result);
+            // Safety check to make sure we have valid data
+            try {
+              // Only update if we have valid keypoints
+              const validKeypointsCount = 
+                result.keypoints && Array.isArray(result.keypoints) 
+                ? result.keypoints.filter(p => p !== null).length 
+                : 0;
+                
+              if (validKeypointsCount > 10) {
+                setAnalysis(result);
+              }
+            } catch (err) {
+              console.error('Error processing analysis result:', err);
             }
           }
         })
         .catch(err => {
           console.error('Error analyzing frame:', err);
+          // Don't set error state to avoid disrupting the UI
         });
       } catch (err) {
         console.error('Error processing frame:', err);
@@ -180,80 +170,120 @@ useEffect(() => {
   };
 }, [isStreaming]);
 
-// Draw detected pose on canvas
+// Draw detected pose on canvas with improved error handling
 const drawPose = (ctx, keypoints) => {
-  if (!keypoints || keypoints.length < 17) return;
+  if (!keypoints || !Array.isArray(keypoints) || keypoints.length < 17) return;
   
-  // Get canvas dimensions
-  const canvasWidth = ctx.canvas.width;
-  const canvasHeight = ctx.canvas.height;
-  
-  // Clear canvas first if it's the skeleton-only view
-  if (ctx.canvas.className === 'skeleton-canvas') {
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-  }
-  
-  // Enhanced visibility for keypoints and connections
-  const lineWidth = ctx.canvas.className === 'skeleton-canvas' ? 4 : 3;
-  ctx.lineWidth = lineWidth;
-  
-  // Draw all detected points first to ensure complete visualization
-  keypoints.forEach((point, index) => {
-    if (!point) return;
+  try {
+    // Get canvas dimensions
+    const canvasWidth = ctx.canvas.width;
+    const canvasHeight = ctx.canvas.height;
     
-    let color;
-    if (index === 0) color = keypointColors.nose;
-    else if (index === 5 || index === 6) color = keypointColors.shoulder;
-    else if (index === 7 || index === 8) color = keypointColors.elbow;
-    else if (index === 9 || index === 10) color = keypointColors.wrist;
-    else if (index === 11 || index === 12) color = keypointColors.hip;
-    else if (index === 13 || index === 14) color = keypointColors.knee;
-    else if (index === 15 || index === 16) color = keypointColors.ankle;
-    else color = '#FFFFFF';
-    
-    ctx.beginPath();
-    ctx.arc(point[0], point[1], 6, 0, 2 * Math.PI);
-    ctx.fillStyle = color;
-    ctx.fill();
-  });
-  
-  // Draw connections with brighter colors for better visibility
-  connections.forEach(connection => {
-    const points = connection.map(idx => keypoints[idx]).filter(point => point !== null);
-    
-    if (points.length >= 2) {
-      ctx.beginPath();
-      ctx.moveTo(points[0][0], points[0][1]);
-      
-      for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i][0], points[i][1]);
-      }
-      
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.stroke();
+    // Clear canvas first if it's the skeleton-only view
+    if (ctx.canvas.className === 'skeleton-canvas') {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     }
-  });
+    
+    // Enhanced visibility for keypoints and connections
+    const lineWidth = ctx.canvas.className === 'skeleton-canvas' ? 4 : 3;
+    ctx.lineWidth = lineWidth;
+    
+    // Define keypoint colors if not already defined in the outer scope
+    const colors = {
+      nose: '#FF0000',
+      shoulder: '#00FF00',
+      elbow: '#0000FF',
+      wrist: '#FFA500',
+      hip: '#800080',
+      knee: '#FFFF00',
+      ankle: '#00FFFF'
+    };
+    
+    // Draw all detected points first to ensure complete visualization
+    keypoints.forEach((point, index) => {
+      if (!point || !Array.isArray(point) || point.length < 2) return;
+      
+      let color;
+      if (index === 0) color = colors.nose;
+      else if (index === 5 || index === 6) color = colors.shoulder;
+      else if (index === 7 || index === 8) color = colors.elbow;
+      else if (index === 9 || index === 10) color = colors.wrist;
+      else if (index === 11 || index === 12) color = colors.hip;
+      else if (index === 13 || index === 14) color = colors.knee;
+      else if (index === 15 || index === 16) color = colors.ankle;
+      else color = '#FFFFFF';
+      
+      ctx.beginPath();
+      ctx.arc(point[0], point[1], 6, 0, 2 * Math.PI);
+      ctx.fillStyle = color;
+      ctx.fill();
+    });
+    
+    // Draw connections with brighter colors for better visibility
+    if (connections && Array.isArray(connections)) {
+      connections.forEach(connection => {
+        if (!connection || !Array.isArray(connection)) return;
+        
+        const points = connection
+          .map(idx => (idx >= 0 && idx < keypoints.length) ? keypoints[idx] : null)
+          .filter(point => point !== null && Array.isArray(point) && point.length >= 2);
+        
+        if (points.length >= 2) {
+          ctx.beginPath();
+          ctx.moveTo(points[0][0], points[0][1]);
+          
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i][0], points[i][1]);
+          }
+          
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.stroke();
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Error drawing pose:", error);
+    // Silently fail so the app continues to function
+  }
 };
 
-// Render score visualization
+// Render score visualization with improved error handling
 const renderScoreVisualization = () => {
-  if (!analysis || !analysis.analysis || !analysis.analysis.valid_pose) return null;
+  if (!analysis || !analysis.analysis) return renderEmptyScore();
   
-  const score = analysis.analysis.score || 0;
-  
-  return (
-    <div className="score-visualization">
-      <div className="score-meter">
-        <div 
-          className="score-fill" 
-          style={{ width: `${score}%`, backgroundColor: getScoreColor(score) }}
-        ></div>
+  try {
+    // Check if we have a valid pose
+    if (!analysis.analysis.valid_pose) return renderEmptyScore();
+    
+    // Get score with fallback to 0
+    let score = 0;
+    if (typeof analysis.analysis.score === 'number') {
+      score = analysis.analysis.score;
+    } else if (typeof analysis.analysis.score === 'string') {
+      // Try to parse string to number
+      score = parseFloat(analysis.analysis.score) || 0;
+    }
+    
+    // Clamp score between 0 and 100
+    score = Math.max(0, Math.min(100, score));
+    
+    return (
+      <div className="score-visualization">
+        <div className="score-meter">
+          <div 
+            className="score-fill" 
+            style={{ width: `${score}%`, backgroundColor: getScoreColor(score) }}
+          ></div>
+        </div>
+        <div className="score-label">Form Score: {score}%</div>
       </div>
-      <div className="score-label">Form Score: {score}%</div>
-    </div>
-  );
+    );
+  } catch (error) {
+    console.error("Error rendering score visualization:", error);
+    return renderEmptyScore();
+  }
 };
 
 // Get color based on score
@@ -263,52 +293,127 @@ const getScoreColor = (score) => {
   return '#F44336'; // Red
 };
 
-// Render feedback list
+// Render feedback list with improved error handling
 const renderFeedback = () => {
   if (!analysis || !analysis.analysis || !analysis.analysis.feedback) return null;
   
-  let feedback = analysis.analysis.feedback;
-  if (typeof feedback === 'string') {
-    feedback = [feedback]; // Convert string to array
+  try {
+    let feedback = analysis.analysis.feedback;
+    
+    // Handle different formats of feedback data
+    if (typeof feedback === 'string') {
+      feedback = [feedback]; // Convert string to array
+    } else if (!Array.isArray(feedback)) {
+      // If it's neither string nor array, create default feedback
+      console.error('Invalid feedback format:', feedback);
+      feedback = ['Analyzing your form...'];
+    }
+    
+    // Ensure we have at least one item
+    if (feedback.length === 0) {
+      feedback = ['No specific feedback at this moment'];
+    }
+    
+    return (
+      <div className="feedback-container">
+        <h3>Form Feedback:</h3>
+        <ul className="feedback-list">
+          {feedback.map((item, index) => (
+            <li key={index} className="feedback-item">{item}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  } catch (error) {
+    console.error("Error rendering feedback:", error);
+    return renderEmptyFeedback();
   }
-  
-  return (
-    <div className="feedback-container">
-      <h3>Form Feedback:</h3>
-      <ul className="feedback-list">
-        {feedback.map((item, index) => (
-          <li key={index} className="feedback-item">{item}</li>
-        ))}
-      </ul>
-    </div>
-  );
 };
 
-// Render metrics details
+// Render metrics details with improved error handling
 const renderMetrics = () => {
-  if (!analysis || !analysis.analysis || !analysis.analysis.metrics) return null;
+  if (!analysis || !analysis.analysis || !analysis.analysis.metrics) return renderEmptyMetrics();
   
-  const { metrics } = analysis.analysis;
-  
+  try {
+    const { metrics } = analysis.analysis;
+    
+    // Safety check to ensure metrics object exists
+    if (!metrics || typeof metrics !== 'object') {
+      return renderEmptyMetrics();
+    }
+    
+    // Format angle with proper error handling
+    const formatAngle = (angle) => {
+      if (angle === null || angle === undefined) return 'N/A';
+      if (typeof angle === 'number') {
+        // Ensure the number is finite before formatting
+        return isFinite(angle) ? `${angle.toFixed(1)}°` : 'N/A';
+      }
+      if (typeof angle === 'string') {
+        // Try to parse string to number
+        const parsed = parseFloat(angle);
+        return !isNaN(parsed) ? `${parsed.toFixed(1)}°` : 'N/A';
+      }
+      return 'N/A';
+    };
+    
+    // Format boolean with proper error handling
+    const formatBoolean = (value) => {
+      if (value === true) return 'Good';
+      if (value === false) return 'Needs Improvement';
+      return 'N/A';
+    };
+    
+    return (
+      <div className="metrics-container">
+        <h3>Form Metrics:</h3>
+        <div className="metrics-grid">
+          <div className="metric-item">
+            <div className="metric-label">Elbow Angle:</div>
+            <div className="metric-value">{formatAngle(metrics.elbow_angle)}</div>
+          </div>
+          <div className="metric-item">
+            <div className="metric-label">Knee Angle:</div>
+            <div className="metric-value">{formatAngle(metrics.knee_angle)}</div>
+          </div>
+          <div className="metric-item">
+            <div className="metric-label">Shooting Arc:</div>
+            <div className="metric-value">{formatAngle(metrics.shooting_arc)}</div>
+          </div>
+          <div className="metric-item">
+            <div className="metric-label">Wrist Position:</div>
+            <div className="metric-value">{formatBoolean(metrics.wrist_above_elbow)}</div>
+          </div>
+        </div>
+      </div>
+    );
+  } catch (error) {
+    console.error("Error rendering metrics:", error);
+    return renderEmptyMetrics();
+  }
+};
+
+// Render empty metrics placeholder
+const renderEmptyMetrics = () => {
   return (
     <div className="metrics-container">
       <h3>Form Metrics:</h3>
       <div className="metrics-grid">
         <div className="metric-item">
           <div className="metric-label">Elbow Angle:</div>
-          <div className="metric-value">{metrics.elbow_angle ? `${metrics.elbow_angle.toFixed(1)}°` : 'N/A'}</div>
+          <div className="metric-value">--</div>
         </div>
         <div className="metric-item">
           <div className="metric-label">Knee Angle:</div>
-          <div className="metric-value">{metrics.knee_angle ? `${metrics.knee_angle.toFixed(1)}°` : 'N/A'}</div>
+          <div className="metric-value">--</div>
         </div>
         <div className="metric-item">
           <div className="metric-label">Shooting Arc:</div>
-          <div className="metric-value">{metrics.shooting_arc ? `${metrics.shooting_arc.toFixed(1)}°` : 'N/A'}</div>
+          <div className="metric-value">--</div>
         </div>
         <div className="metric-item">
           <div className="metric-label">Wrist Position:</div>
-          <div className="metric-value">{metrics.wrist_above_elbow ? 'Good' : 'Needs Improvement'}</div>
+          <div className="metric-value">--</div>
         </div>
       </div>
     </div>
@@ -319,6 +424,10 @@ const renderMetrics = () => {
 const renderSkeletonOnly = () => {
   if (!analysis || !analysis.keypoints) return null;
   
+  // Check if we have enough valid keypoints to draw a skeleton
+  const validKeypointsCount = analysis.keypoints.filter(point => point !== null).length;
+  if (validKeypointsCount < 10) return renderPlaceholderSkeleton();
+  
   return (
     <div className="skeleton-container">
       <h3>Pose Skeleton</h3>
@@ -326,33 +435,37 @@ const renderSkeletonOnly = () => {
         <canvas 
           ref={(canvas) => {
             if (canvas && analysis.keypoints) {
-              canvas.width = 300;
-              canvas.height = 400;
-              const ctx = canvas.getContext('2d');
-              // Clear the canvas
-              ctx.clearRect(0, 0, canvas.width, canvas.height);
-              // Set background
-              ctx.fillStyle = '#1a1a1a';
-              ctx.fillRect(0, 0, canvas.width, canvas.height);
-              
-              // Create a copy of keypoints scaled to fit the skeleton canvas
-              const scaledKeypoints = analysis.keypoints.map(point => {
-                if (!point) return null;
+              try {
+                canvas.width = 300;
+                canvas.height = 400;
+                const ctx = canvas.getContext('2d');
+                // Clear the canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Set background
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
-                // Get original video dimensions
-                const videoWidth = videoRef.current ? videoRef.current.videoWidth : 640;
-                const videoHeight = videoRef.current ? videoRef.current.videoHeight : 480;
+                // Get original video dimensions with fallback values
+                const videoWidth = (videoRef.current && videoRef.current.videoWidth) || 640;
+                const videoHeight = (videoRef.current && videoRef.current.videoHeight) || 480;
                 
                 // Scale factors
                 const scaleX = canvas.width / videoWidth;
                 const scaleY = canvas.height / videoHeight;
                 
-                // Return scaled point
-                return [point[0] * scaleX, point[1] * scaleY];
-              });
-              
-              // Draw the skeleton with scaled keypoints
-              drawPose(ctx, scaledKeypoints);
+                // Create a copy of keypoints scaled to fit the skeleton canvas
+                const scaledKeypoints = analysis.keypoints.map(point => {
+                  if (!point) return null;
+                  return [point[0] * scaleX, point[1] * scaleY];
+                });
+                
+                // Draw the skeleton with scaled keypoints
+                drawPose(ctx, scaledKeypoints);
+              } catch (error) {
+                console.error("Error rendering skeleton:", error);
+                // Fall back to placeholder if rendering fails
+                return renderPlaceholderSkeleton();
+              }
             }
           }}
           className="skeleton-canvas"
@@ -362,18 +475,52 @@ const renderSkeletonOnly = () => {
   );
 };
 
+// Render empty skeleton box
+const renderEmptySkeletonBox = () => {
+  return (
+    <div className="skeleton-container">
+      <h3>Pose Skeleton</h3>
+      <div className="skeleton-canvas-container">
+        <div className="empty-skeleton-box"></div>
+      </div>
+    </div>
+  );
+};
+
+// Render empty feedback placeholder
+const renderEmptyFeedback = () => {
+  return (
+    <div className="feedback-container">
+      <h3>Form Feedback:</h3>
+      <ul className="feedback-list">
+        <li className="feedback-item empty-feedback">Start camera to receive feedback</li>
+      </ul>
+    </div>
+  );
+};
+
+// Empty score visualization before camera starts
+const renderEmptyScore = () => {
+  return (
+    <div className="score-visualization">
+      <div className="score-meter">
+        <div className="score-fill" style={{ width: '0%' }}></div>
+      </div>
+      <div className="score-label">Form Score: --</div>
+    </div>
+  );
+};
+
 return (
   <div className="app-container">
     <header>
-      <h1>Basketball Form Checker</h1>
+      <h1>Shooting Form Checker</h1>
       <div className="connection-status" data-status={connectionStatus === 'Connected to backend' ? 'connected' : 'error'}>
         {connectionStatus}
       </div>
     </header>
     
-    {/* Audio elements for feedback sounds */}
-    <audio ref={goodFormAudioRef} src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_9f193757bd.mp3?filename=ping-82822.mp3" preload="auto"></audio>
-    <audio ref={badFormAudioRef} src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0a1b09ff40.mp3?filename=wrong-answer-126515.mp3" preload="auto"></audio>
+    {/* App header content */}
     
     <main>
       <div className="video-container">
@@ -405,30 +552,39 @@ return (
               <button onClick={stopWebcam} className="control-button stop-button">
                 Stop Camera
               </button>
-              <button 
-                onClick={() => setAudioEnabled(!audioEnabled)} 
-                className={`control-button audio-button ${audioEnabled ? 'audio-on' : 'audio-off'}`}
-              >
-                {audioEnabled ? 'Mute Feedback' : 'Enable Audio'}
-              </button>
+
             </>
           )}
         </div>
         
         {error && <div className="error-message">{error}</div>}
+        
+        {/* Show starting message when camera is not active */}
+        {!isStreaming && !error && (
+          <div className="start-message">
+            <h3>Start Camera to Begin Analysis</h3>
+            <p>Position yourself so your full body is visible</p>
+          </div>
+        )}
       </div>
       
       <div className="analysis-container">
-        {/* Show skeleton view always when analysis exists */}
-        {analysis && analysis.keypoints && renderSkeletonOnly()}
-        
-        {analysis && analysis.analysis && (
-          <div className="results-container">
-            {renderScoreVisualization()}
-            {renderFeedback()}
-            {renderMetrics()}
-          </div>
-        )}
+        <div className="results-container">
+          {/* Show either actual skeleton data or empty box */}
+          {analysis && analysis.keypoints ? renderSkeletonOnly() : renderEmptySkeletonBox()}
+          
+          {/* Check if we have valid analysis data for score */}
+          {analysis && analysis.analysis && analysis.analysis.valid_pose ? 
+            renderScoreVisualization() : renderEmptyScore()}
+          
+          {/* Check if we have valid feedback */}
+          {analysis && analysis.analysis && analysis.analysis.feedback ? 
+            renderFeedback() : renderEmptyFeedback()}
+          
+          {/* Check if we have valid metrics */}
+          {analysis && analysis.analysis && analysis.analysis.metrics ? 
+            renderMetrics() : renderEmptyMetrics()}
+        </div>
       </div>
     </main>
     
