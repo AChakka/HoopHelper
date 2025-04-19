@@ -11,13 +11,47 @@ body{
     font-size: 100px;
 }
 
+.app {
+    margin: 0;
+    height: 100vh;
+    background: url('./assets/giphy.gif') no-repeat center center fixed;
+    background-size: cover;
+    border: 20px solid orange;
+    box-sizing: border-box;
+    position: relative;
+    font-family: 'Arial', sans-serif;
+  }
 
+.content-box {
+    position: relative;
+    top: 60%;
+    left:50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(255, 165, 0, 0.85);
+    padding: 30px;
+    border: 5px solid #ff6600;
+    border-radius: 15px;
+    width: 60%;
+    text-align: center;
+    color: white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+    top: 400px;
+}
+
+.content-box h1{
+    font-size: 2.5em;
+    margin: 0;
+}
+
+.content-box p{
+    font-size: 1.2em;
+}
 
 .ballIcon{
   display: inline-block;
   vertical-align: middle;
   font-size: 0.6em;
-  color: rgb(230, 155, 17);
+  color: rgb(0, 0, 0);
   margin: 0 2px;
   position: relative;
   top: 15px;
@@ -34,3 +68,28 @@ body{
     border-radius: 20px;
     cursor: pointer;
 }
+
+.basketball-shot {
+    position: absolute;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 50px;
+    animation: shootBall 2s ease-out forwards;
+    z-index: 10;
+  }
+  
+  @keyframes shootBall {
+    0% {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    60% {
+      transform: translateX(-50%) translateY(-60vh) rotate(180deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(-50%) translateY(-100vh) rotate(360deg);
+      opacity: 0;
+    }
+  }
