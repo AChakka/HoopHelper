@@ -22,6 +22,10 @@ const [isPaused, setIsPaused] = useState(false); // New state for pause function
 const [error, setError] = useState(null);
 const [connectionStatus, setConnectionStatus] = useState('Checking connection...');
 
+// New state variables for history tracking
+const [history, setHistory] = useState([]);
+const [showHistory, setShowHistory] = useState(false);
+
 // Define connections between keypoints
 const connections = [
   [5, 7, 9], // Left arm (shoulder, elbow, wrist)
@@ -31,6 +35,36 @@ const connections = [
   [5, 6], // Shoulders
   [11, 12], // Hips
 ];
+
+// Add this simple function
+const toggleHistoryPanel = () => {
+  setShowHistory(!showHistory);
+};
+
+// Simple save function
+const saveToHistory = () => {
+  if (!analysis || !analysis.analysis) return;
+  
+  // Create a timestamp
+  const timestamp = new Date().toLocaleString();
+  
+  // Create a screenshot from current canvas
+  const screenshot = canvasRef.current.toDataURL('image/jpeg', 0.7);
+  
+  // Create history item
+  const historyItem = {
+    id: Date.now(),
+    timestamp,
+    screenshot,
+    analysis: analysis.analysis
+  };
+  
+  // Update history state with new item
+  setHistory(prevHistory => [historyItem, ...prevHistory]);
+  
+  // Show success message
+  alert('Form analysis saved to history!');
+};
 
 // Start webcam stream
 const startWebcam = async () => {
@@ -456,7 +490,7 @@ const renderSkeletonOnly = () => {
   
   // Check if we have enough valid keypoints to draw a skeleton
   const validKeypointsCount = analysis.keypoints.filter(point => point !== null).length;
-  if (validKeypointsCount < 10) return renderPlaceholderSkeleton();
+  if (validKeypointsCount < 10) return renderEmptySkeletonBox();
   
   return (
     <div className="skeleton-container">
@@ -494,7 +528,7 @@ const renderSkeletonOnly = () => {
               } catch (error) {
                 console.error("Error rendering skeleton:", error);
                 // Fall back to placeholder if rendering fails
-                return renderPlaceholderSkeleton();
+                return renderEmptySkeletonBox();
               }
             }
           }}
@@ -533,12 +567,15 @@ return (
   <div className="app-container">
     <header>
       <h1>Shooting Form Checker</h1>
-      <div className="connection-status" data-status={connectionStatus === 'Connected to backend' ? 'connected' : 'error'}>
-        {connectionStatus}
+      <div className="app-controls">
+        <button onClick={toggleHistoryPanel} className="history-toggle-button">
+          {showHistory ? 'Hide History' : 'Show History'}
+        </button>
+        <div className="connection-status" data-status={connectionStatus === 'Connected to backend' ? 'connected' : 'error'}>
+          {connectionStatus}
+        </div>
       </div>
     </header>
-    
-    {/* App header content */}
     
     <main>
       <div className="video-container">
@@ -571,17 +608,21 @@ return (
                 Stop Camera
               </button>
               
-              {/* New Capture/Resume button */}
               <button onClick={togglePause} className="control-button capture-button">
                 {isPaused ? 'Resume' : 'Capture'}
               </button>
+              
+              {/* New save button - only show when paused */}
+              {isPaused && (
+                <button onClick={saveToHistory} className="control-button save-button">
+                  Save
+                </button>
+              )}
             </>
           )}
         </div>
         
         {error && <div className="error-message">{error}</div>}
-        
-        {/* Empty space - removed starting message */}
         
         {/* Show paused indicator when camera is paused */}
         {isPaused && (
@@ -592,19 +633,39 @@ return (
       </div>
       
       <div className="analysis-container">
+        {/* Simple history panel */}
+        {showHistory && (
+          <div className="simple-history-panel">
+            <h3>Shooting Form History</h3>
+            {history.length === 0 ? (
+              <p>No history available. Capture and save your form to see it here.</p>
+            ) : (
+              <div className="history-items-simple">
+                {history.map(item => (
+                  <div key={item.id} className="history-item-simple">
+                    <img 
+                      src={item.screenshot} 
+                      alt="Form capture" 
+                      className="history-thumbnail-simple"
+                    />
+                    <div className="history-details-simple">
+                      <div>{item.timestamp}</div>
+                      <div>Score: {item.analysis.score || 'N/A'}%</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        
         <div className="results-container">
-          {/* Show either actual skeleton data or empty box */}
+          {/* Your original results content */}
           {analysis && analysis.keypoints ? renderSkeletonOnly() : renderEmptySkeletonBox()}
-          
-          {/* Check if we have valid analysis data for score */}
           {analysis && analysis.analysis && analysis.analysis.valid_pose ? 
             renderScoreVisualization() : renderEmptyScore()}
-          
-          {/* Check if we have valid feedback */}
           {analysis && analysis.analysis && analysis.analysis.feedback ? 
             renderFeedback() : renderEmptyFeedback()}
-          
-          {/* Check if we have valid metrics */}
           {analysis && analysis.analysis && analysis.analysis.metrics ? 
             renderMetrics() : renderEmptyMetrics()}
         </div>
@@ -617,4 +678,5 @@ return (
 );
 }
 
+// Make sure to add this export default statement
 export default App;
