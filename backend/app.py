@@ -6,7 +6,6 @@ import numpy as np
 import base64
 import time
 from ultralytics import YOLO
-import json
 import math
 
 app = Flask(__name__)
