@@ -1,6 +1,6 @@
 // App.jsx
 import { useState, useEffect, useRef } from 'react';
-import './App.css';
+import './FormChecker.css';
 
 // Define keypointColors globally to ensure it's available
 const keypointColors = {

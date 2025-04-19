@@ -1,9 +1,11 @@
 import React from 'react'
 import { TfiBasketball } from "react-icons/tfi"; 
 import './Landing.css'
+import { useNavigate } from 'react-router-dom';
 
 
 const Landing = () => {
+    const navigate = useNavigate();
   return (
     <div>
           <div className="app">
@@ -25,7 +27,7 @@ const Landing = () => {
                     pHelper
                 </div>
                 <div className='StartButtonWrapper'>
-                    <button className='StartButton'>Start</button>
+                    <button className='StartButton' onClick={() => navigate('/app')}>Start</button>
                 </div>
             </div>
         </div>
