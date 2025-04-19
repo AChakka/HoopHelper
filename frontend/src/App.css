@@ -85,14 +85,14 @@ main {
   box-shadow: var(--box-shadow);
   width: 100%;
   max-width: 640px;
+  height: 480px;
   margin: 0 auto;
 }
 
 .video-container video {
   display: block;
   width: 100%;
-  max-width: 640px;
-  height: auto;
+  height: 100%;
   object-fit: cover;
 }
 
@@ -293,4 +293,5 @@ footer {
   color: var(--secondary-color);
   font-size: 0.9rem;
   border-top: 1px solid #ddd;
+  height: 10px;
 }

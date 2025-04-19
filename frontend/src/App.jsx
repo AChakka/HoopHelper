@@ -94,18 +94,13 @@ function App() {
     
     let animationId;
     let lastAnalysisTime = 0;
-    const analyzeInterval = 500; // Analyze every 500ms to reduce load
+    const analyzeInterval = 300; // Analyze more frequently for better tracking
     
     const processFrame = async (timestamp) => {
       if (!video || !canvas) return;
       
-      // Draw video frame to canvas
+      // Draw video frame to canvas without keypoints overlay
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Continue drawing the pose if we have keypoints from previous analysis
-      if (analysis && analysis.keypoints) {
-        drawPose(ctx, analysis.keypoints);
-      }
       
       // Analyze frame at intervals without pausing the camera view
       if (timestamp - lastAnalysisTime > analyzeInterval) {
@@ -113,7 +108,7 @@ function App() {
         
         try {
           // Get canvas data as base64 image
-          const imageData = canvas.toDataURL('image/jpeg', 0.8);
+          const imageData = canvas.toDataURL('image/jpeg', 0.9); // Higher quality for better detection
           
           // Send to backend for analysis in a non-blocking way
           fetch('http://localhost:5000/api/analyze-frame', {
@@ -128,7 +123,10 @@ function App() {
             if (result.error) {
               console.error('Analysis error:', result.error);
             } else {
-              setAnalysis(result);
+              // Only update if we have valid keypoints
+              if (result.keypoints && result.keypoints.filter(p => p !== null).length > 10) {
+                setAnalysis(result);
+              }
             }
           })
           .catch(err => {
@@ -151,32 +149,28 @@ function App() {
         cancelAnimationFrame(animationId);
       }
     };
-  }, [isStreaming, analysis]);
+  }, [isStreaming]);
 
   // Draw detected pose on canvas
   const drawPose = (ctx, keypoints) => {
     if (!keypoints || keypoints.length < 17) return;
     
-    // Draw connections first (so they're behind the points)
-    ctx.lineWidth = 3;
+    // Get canvas dimensions
+    const canvasWidth = ctx.canvas.width;
+    const canvasHeight = ctx.canvas.height;
     
-    connections.forEach(connection => {
-      const points = connection.map(idx => keypoints[idx]).filter(point => point !== null);
-      
-      if (points.length >= 2) {
-        ctx.beginPath();
-        ctx.moveTo(points[0][0], points[0][1]);
-        
-        for (let i = 1; i < points.length; i++) {
-          ctx.lineTo(points[i][0], points[i][1]);
-        }
-        
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.stroke();
-      }
-    });
+    // Clear canvas first if it's the skeleton-only view
+    if (ctx.canvas.className === 'skeleton-canvas') {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    }
     
-    // Draw keypoints
+    // Enhanced visibility for keypoints and connections
+    const lineWidth = ctx.canvas.className === 'skeleton-canvas' ? 4 : 3;
+    ctx.lineWidth = lineWidth;
+    
+    // Draw all detected points first to ensure complete visualization
     keypoints.forEach((point, index) => {
       if (!point) return;
       
@@ -191,9 +185,26 @@ function App() {
       else color = '#FFFFFF';
       
       ctx.beginPath();
-      ctx.arc(point[0], point[1], 5, 0, 2 * Math.PI);
+      ctx.arc(point[0], point[1], 6, 0, 2 * Math.PI);
       ctx.fillStyle = color;
       ctx.fill();
+    });
+    
+    // Draw connections with brighter colors for better visibility
+    connections.forEach(connection => {
+      const points = connection.map(idx => keypoints[idx]).filter(point => point !== null);
+      
+      if (points.length >= 2) {
+        ctx.beginPath();
+        ctx.moveTo(points[0][0], points[0][1]);
+        
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i][0], points[i][1]);
+        }
+        
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.stroke();
+      }
     });
   };
 
@@ -286,18 +297,35 @@ function App() {
           <canvas 
             ref={(canvas) => {
               if (canvas && analysis.keypoints) {
+                canvas.width = 300;
+                canvas.height = 400;
                 const ctx = canvas.getContext('2d');
                 // Clear the canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 // Set background
                 ctx.fillStyle = '#1a1a1a';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                // Draw the skeleton
-                drawPose(ctx, analysis.keypoints);
+                
+                // Create a copy of keypoints scaled to fit the skeleton canvas
+                const scaledKeypoints = analysis.keypoints.map(point => {
+                  if (!point) return null;
+                  
+                  // Get original video dimensions
+                  const videoWidth = videoRef.current ? videoRef.current.videoWidth : 640;
+                  const videoHeight = videoRef.current ? videoRef.current.videoHeight : 480;
+                  
+                  // Scale factors
+                  const scaleX = canvas.width / videoWidth;
+                  const scaleY = canvas.height / videoHeight;
+                  
+                  // Return scaled point
+                  return [point[0] * scaleX, point[1] * scaleY];
+                });
+                
+                // Draw the skeleton with scaled keypoints
+                drawPose(ctx, scaledKeypoints);
               }
             }}
-            width="300" 
-            height="400" 
             className="skeleton-canvas"
           />
         </div>
@@ -318,19 +346,19 @@ function App() {
         <div className="video-container">
           <video 
             ref={videoRef} 
-            width="640" 
-            height="480" 
             autoPlay 
             playsInline
+            style={{width: '100%', height: '100%', objectFit: 'cover'}}
             onLoadedMetadata={() => {
-              canvasRef.current.width = videoRef.current.videoWidth;
-              canvasRef.current.height = videoRef.current.videoHeight;
+              const videoWidth = videoRef.current.videoWidth;
+              const videoHeight = videoRef.current.videoHeight;
+              // Set canvas dimensions to match video dimensions
+              canvasRef.current.width = videoWidth;
+              canvasRef.current.height = videoHeight;
             }}
           />
           <canvas 
-            ref={canvasRef} 
-            width="640" 
-            height="480" 
+            ref={canvasRef}
             className="pose-canvas"
           />
           
@@ -353,17 +381,6 @@ function App() {
           {/* Show skeleton view always when analysis exists */}
           {analysis && analysis.keypoints && renderSkeletonOnly()}
           
-          <div className="instructions">
-            <h2>How to Use:</h2>
-            <ol>
-              <li>Click "Start Camera" and allow camera access</li>
-              <li>Position yourself so your full body is visible</li>
-              <li>Perform a basketball shooting motion</li>
-              <li>Hold the pose at release point for best results</li>
-              <li>Review the feedback to improve your form</li>
-            </ol>
-          </div>
-          
           {analysis && analysis.analysis && (
             <div className="results-container">
               {renderScoreVisualization()}
@@ -375,7 +392,6 @@ function App() {
       </main>
       
       <footer>
-        <p>Basketball Form Checker | Powered by YOLOv8 Pose Detection</p>
       </footer>
     </div>
   );
