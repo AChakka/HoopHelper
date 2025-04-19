@@ -1,0 +1,36 @@
+body{
+    overflow: hidden;
+}
+
+
+.Title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 20vh;
+    font-size: 100px;
+}
+
+
+
+.ballIcon{
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 0.6em;
+  color: rgb(230, 155, 17);
+  margin: 0 2px;
+  position: relative;
+  top: 15px;
+}
+
+.StartButtonWrapper{
+    display: flex;
+    justify-content: center;
+}
+
+.StartButton{
+    padding: 16px 32px;
+    font-size: 30px;
+    border-radius: 20px;
+    cursor: pointer;
+}

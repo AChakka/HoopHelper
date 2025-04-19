@@ -1,9 +1,18 @@
 import React from 'react'
-
+import { TfiBasketball } from "react-icons/tfi"; 
+import './Landing.css'
 const Landing = () => {
   return (
     <div>
-        <h1>Landing</h1>
+        <div className='Title'>
+            H
+            <TfiBasketball className='ballIcon' />
+            <TfiBasketball className='ballIcon' />
+            pHelper
+        </div>
+        <div className='StartButtonWrapper'>
+            <button className='StartButton'>Start</button>
+        </div>
     </div>
   )
 }
