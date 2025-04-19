@@ -14,13 +14,25 @@ body{
 .app {
     margin: 0;
     height: 100vh;
-    background: url('./assets/giphy.gif') no-repeat center center fixed;
-    background-size: cover;
     border: 20px solid orange;
     box-sizing: border-box;
     position: relative;
     font-family: 'Arial', sans-serif;
+    z-index: 1;
   }
+  
+  .hoop {
+    position: fixed;
+    top: 528px;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: url('/transparentHoop.png') no-repeat center top;
+    background-size: 350px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  
 
 .content-box {
     position: relative;
@@ -31,7 +43,7 @@ body{
     padding: 30px;
     border: 5px solid #ff6600;
     border-radius: 15px;
-    width: 60%;
+    width: 40%;
     text-align: center;
     color: white;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
@@ -67,6 +79,7 @@ body{
     font-size: 30px;
     border-radius: 20px;
     cursor: pointer;
+    margin-top: -20px;
 }
 
 .basketball-shot {

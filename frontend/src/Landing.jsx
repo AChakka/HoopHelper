@@ -8,6 +8,8 @@ const Landing = () => {
     <div>
           <div className="app">
 
+            <div className='hoop'>L</div>
+
           <div className="basketball-shot">🏀</div>
 
           <div className="content-box">
