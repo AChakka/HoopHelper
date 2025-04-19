@@ -41,29 +41,149 @@ const toggleHistoryPanel = () => {
   setShowHistory(!showHistory);
 };
 
-// Simple save function
+// Modified saveToHistory function to save skeleton instead of webcam image
 const saveToHistory = () => {
-  if (!analysis || !analysis.analysis) return;
+  if (!analysis || !analysis.analysis || !analysis.keypoints) return;
   
   // Create a timestamp
   const timestamp = new Date().toLocaleString();
   
-  // Create a screenshot from current canvas
-  const screenshot = canvasRef.current.toDataURL('image/jpeg', 0.7);
+  // Create a skeleton capture instead of webcam image
+  let skeletonImage = '';
+  
+  // Create a temporary canvas for the skeleton
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = 300;
+  tempCanvas.height = 400;
+  const ctx = tempCanvas.getContext('2d');
+  
+  // Set background
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+  
+  // Get original video dimensions with fallback values
+  const videoWidth = (videoRef.current && videoRef.current.videoWidth) || 640;
+  const videoHeight = (videoRef.current && videoRef.current.videoHeight) || 480;
+  
+  // Scale factors
+  const scaleX = tempCanvas.width / videoWidth;
+  const scaleY = tempCanvas.height / videoHeight;
+  
+  // Create a copy of keypoints scaled to fit the skeleton canvas
+  const scaledKeypoints = analysis.keypoints.map(point => {
+    if (!point) return null;
+    return [point[0] * scaleX, point[1] * scaleY];
+  });
+  
+  // Draw the skeleton with scaled keypoints
+  drawPose(ctx, scaledKeypoints);
+  
+  // Convert to base64 image
+  skeletonImage = tempCanvas.toDataURL('image/png');
   
   // Create history item
   const historyItem = {
-    id: Date.now(),
+    id: Date.now(), // Unique ID based on timestamp
     timestamp,
-    screenshot,
-    analysis: analysis.analysis
+    screenshot: skeletonImage, // Use skeleton image instead of webcam capture
+    analysis: analysis.analysis,
+    keypoints: analysis.keypoints
   };
   
-  // Update history state with new item
+  // Update history state with new item at the beginning
   setHistory(prevHistory => [historyItem, ...prevHistory]);
   
-  // Show success message
-  alert('Form analysis saved to history!');
+  // Save to localStorage
+  try {
+    // Get existing history or initialize empty array
+    const existingHistory = JSON.parse(localStorage.getItem('shootingFormHistory')) || [];
+    // Add new item to beginning
+    const updatedHistory = [historyItem, ...existingHistory];
+    // Limit to last 10 entries to prevent storage issues
+    const limitedHistory = updatedHistory.slice(0, 10);
+    // Save back to localStorage
+    localStorage.setItem('shootingFormHistory', JSON.stringify(limitedHistory));
+    
+    // Show success message
+    alert('Pose skeleton saved to history!');
+  } catch (err) {
+    console.error('Error saving to localStorage:', err);
+  }
+};
+
+// Function to load history from localStorage when component mounts
+useEffect(() => {
+  try {
+    const savedHistory = JSON.parse(localStorage.getItem('shootingFormHistory')) || [];
+    setHistory(savedHistory);
+  } catch (err) {
+    console.error('Error loading history from localStorage:', err);
+    // If there's an error, just initialize with empty array
+    setHistory([]);
+  }
+}, []);
+
+// Render skeleton-focused history panel
+const renderHistoryPanel = () => {
+  return (
+    <div className={`history-panel ${showHistory ? 'history-panel-visible' : ''}`}>
+      <div className="history-header">
+        <h3>Form History</h3>
+        <button 
+          onClick={() => {
+            if (window.confirm('Are you sure you want to clear all history?')) {
+              setHistory([]);
+              localStorage.removeItem('shootingFormHistory');
+            }
+          }} 
+          className="clear-history-button"
+          disabled={history.length === 0}
+        >
+          Clear All
+        </button>
+      </div>
+      
+      {history.length === 0 ? (
+        <div className="empty-history-message">
+          No history available. Capture and save your form to see it here.
+        </div>
+      ) : (
+        <div className="history-items">
+          {history.map(item => (
+            <div 
+              key={item.id} 
+              className="history-item"
+              onClick={() => {
+                // View the history item in detail
+                alert(`Form Score: ${item.analysis.score}%\nCapture Time: ${item.timestamp}`);
+              }}
+            >
+              <div className="history-thumbnail">
+                <img src={item.screenshot} alt="Form skeleton" />
+              </div>
+              <div className="history-details">
+                <div className="history-timestamp">{item.timestamp}</div>
+                <div className="history-score">
+                  Score: {typeof item.analysis.score === 'number' ? `${item.analysis.score}%` : 'N/A'}
+                </div>
+              </div>
+              <button 
+                className="delete-history-item" 
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent triggering the parent click
+                  const updatedHistory = history.filter(h => h.id !== item.id);
+                  setHistory(updatedHistory);
+                  localStorage.setItem('shootingFormHistory', JSON.stringify(updatedHistory));
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Start webcam stream
@@ -615,7 +735,7 @@ return (
               {/* New save button - only show when paused */}
               {isPaused && (
                 <button onClick={saveToHistory} className="control-button save-button">
-                  Save
+                  Save Skeleton
                 </button>
               )}
             </>
@@ -633,31 +753,7 @@ return (
       </div>
       
       <div className="analysis-container">
-        {/* Simple history panel */}
-        {showHistory && (
-          <div className="simple-history-panel">
-            <h3>Shooting Form History</h3>
-            {history.length === 0 ? (
-              <p>No history available. Capture and save your form to see it here.</p>
-            ) : (
-              <div className="history-items-simple">
-                {history.map(item => (
-                  <div key={item.id} className="history-item-simple">
-                    <img 
-                      src={item.screenshot} 
-                      alt="Form capture" 
-                      className="history-thumbnail-simple"
-                    />
-                    <div className="history-details-simple">
-                      <div>{item.timestamp}</div>
-                      <div>Score: {item.analysis.score || 'N/A'}%</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {renderHistoryPanel()}
         
         <div className="results-container">
           {/* Your original results content */}
