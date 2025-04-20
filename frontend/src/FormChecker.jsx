@@ -269,21 +269,21 @@ useEffect(() => {
   
   let animationId;
   let lastAnalysisTime = 0;
-  const analyzeInterval = 300; // Analyze more frequently for better tracking
+  const analyzeInterval = 1200; // Changed from 300 to 1200 ms (1.2 seconds)
   
   const processFrame = async (timestamp) => {
     if (!video || !canvas) return;
     
-    // Draw video frame to canvas without keypoints overlay
+    // Always draw video frame to canvas for smooth display
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Analyze frame at intervals without pausing the camera view
+    // Only analyze frame every 1.2 seconds
     if (timestamp - lastAnalysisTime > analyzeInterval) {
       lastAnalysisTime = timestamp;
       
       try {
         // Get canvas data as base64 image
-        const imageData = canvas.toDataURL('image/jpeg', 0.9); // Higher quality for better detection
+        const imageData = canvas.toDataURL('image/jpeg', 0.8); // Slightly reduced quality for faster processing
         
         // Send to backend for analysis in a non-blocking way
         fetch('http://localhost:5000/api/analyze-frame', {
@@ -313,6 +313,11 @@ useEffect(() => {
                 
               if (validKeypointsCount > 10) {
                 setAnalysis(result);
+                
+                // Draw the skeleton directly when we get new keypoints
+                if (canvas && ctx && result.keypoints) {
+                  drawPose(ctx, result.keypoints);
+                }
               }
             } catch (err) {
               console.error('Error processing analysis result:', err);
