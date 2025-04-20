@@ -8,8 +8,6 @@
 - **Backend**: Python
 - **Version Control**: Git
 
-## 📁 Project Structure
-
 ## 📌 Features
 - Track player statistics and performance metrics.
 
