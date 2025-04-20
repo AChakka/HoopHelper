@@ -73,9 +73,9 @@ body{
 .ballIcon{
   display: inline-block;
   vertical-align: middle;
-  font-size: 0.6em;
+  font-size: 0.8em;
   color: rgb(0, 0, 0);
-  margin: 0 2px;
+  margin: auto;
   position: relative;
   top: 15px;
 }
