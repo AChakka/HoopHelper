@@ -14,3 +14,8 @@
 - Manage game schedules and team rosters.
 
 - User-friendly interface for easy navigation.
+
+## Sources
+- Video for Background - https://www.youtube.com/watch?v=_g0Bx6o58aE
+- Two basketballs for Title - React Icons
+
