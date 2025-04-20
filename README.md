@@ -1,22 +1,22 @@
 # HoopHelper
 
-**HoopHelper** is a basketball-focused web application designed to assist players, coaches, and enthusiasts in tracking and analyzing basketball performance. Built with a modern tech stack, it offers tools for managing player statistics, game schedules, and more.
+**HoopHelper** is a basketball-focused web application designed to assist players, coaches, and enthusiasts in tracking and analyzing basketball shooting. Built with a modern tech stack, it offers tools for assisting users shooting form.
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: JavaScript, HTML, CSS
-- **Backend**: Python
+- **Frontend**: React, Vite
+- **Backend**: Python, Flask, Yolov8 Pose Detection
 - **Version Control**: Git
 
 ## 📌 Features
-- Track player statistics and performance metrics.
+- Track players past shots
 
-- Manage game schedules and team rosters.
+- Give custom feedback to users about their shooting form
 
 - User-friendly interface for easy navigation.
 
 ## Sources
 - Video for Background - https://www.youtube.com/watch?v=_g0Bx6o58aE
 - Two basketballs for Title - React Icons
-- We also used ChatGPT to help us create the backend functions and help with centering a div.
+- We also used ChatGPT to help us create the front end for the camera and skeleton features.
 
