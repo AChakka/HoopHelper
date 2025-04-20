@@ -18,4 +18,5 @@
 ## Sources
 - Video for Background - https://www.youtube.com/watch?v=_g0Bx6o58aE
 - Two basketballs for Title - React Icons
+- We also used ChatGPT to help us create the backend functions and help with centering a div.
 
