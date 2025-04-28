@@ -1,4 +1,5 @@
 # HoopHelper
+
 **Video Demo** :  https://www.youtube.com/watch?v=K2HQqNgPAGk
 **HoopHelper** is a basketball-focused web application designed to assist players, coaches, and enthusiasts in tracking and analyzing basketball shooting. Built with a modern tech stack, it offers tools for assisting users shooting form.
 
